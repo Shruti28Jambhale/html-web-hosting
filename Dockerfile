@@ -8,18 +8,26 @@ ENV PYTHONUNBUFFERED 1
 # Set the working directory in the container
 WORKDIR /app
 
-# Copy the dependencies file to the working directory
-COPY requirements.txt .
-
-# Install dependencies
-RUN pip install -r requirements.txt
+# Install Flask and Apache HTTP Server
+RUN pip install Flask && \
+    apt-get update && \
+    apt-get install -y apache2
 
 # Copy the Flask application code and index.html file to the container
 COPY app.py .
 COPY index.html .
 
-# Expose the port the app runs on
-EXPOSE 5000
+# Enable required Apache modules
+RUN a2enmod proxy proxy_http
 
-# Command to run the application
-CMD ["python", "app.py"]
+# Copy Apache configuration file
+COPY apache-flask.conf /etc/apache2/sites-available/
+
+# Enable the Apache site configuration
+RUN a2ensite apache-flask
+
+# Expose the port the Apache server runs on
+EXPOSE 80
+
+# Command to run the Apache server
+CMD ["apachectl", "-D", "FOREGROUND"]
